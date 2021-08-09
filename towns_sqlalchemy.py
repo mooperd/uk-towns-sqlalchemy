@@ -1,58 +1,10 @@
 import csv # give python csv superpowers
+import random
+import geopy.distance
+from model import dbconnect, Town, County, Nation, Journey
 
-
-from sqlalchemy import Integer, Column, String, Float, ForeignKey, UniqueConstraint
-from sqlalchemy.ext.declarative import declarative_base
-from sqlalchemy.orm import relation
-from sqlalchemy import create_engine
-from sqlalchemy.orm import sessionmaker
-
-# Errors
+# SQL Errors
 from sqlalchemy.orm.exc import NoResultFound
-
-Base = declarative_base()
-
-# Country is currently the "parent" of everything. It is the "root".
-class Nation(Base):
-    __tablename__ = 'nation'
-    id = Column(Integer, primary_key=True)
-    name = Column(String(64))
-
-class County(Base):
-    __tablename__ = 'county'
-    id = Column(Integer, primary_key=True)
-    name = Column(String(64))
-    # We define the relationship between Country and County here.
-    nation = relation("Nation", backref="county")
-    nation_id = Column(Integer, ForeignKey('nation.id'))
-
-
-# County is a child of Country
-class Town(Base):
-    __tablename__ = 'town'
-    id = Column(Integer, primary_key=True)
-    name = Column(String(64), index=True)
-    grid_reference = Column(String(64))
-    easting = Column(Integer)
-    northing = Column(Integer)
-    latitude = Column(Float)
-    longitude = Column(Float)
-    elevation = Column(Integer)
-    postcode_sector = Column(String(64))
-    local_government_area = Column(String(64))
-    nuts_region = Column(String(64))
-    town_type = Column(String(64))
-    # We define the relationship between Country and County here.
-    county = relation("County", backref="town")
-    county_id = Column(Integer, ForeignKey('county.id'))
-
-
-# A bunch of stuff to make the connection to the database work.
-def dbconnect():
-    engine = create_engine("mysql+pymysql://root:root@localhost/towns?charset=utf8mb4")
-    Base.metadata.create_all(engine)
-    Session = sessionmaker(bind=engine)
-    return Session()
 
 def addGetNation(session, nation_name_input):
     # Try and get the Nation from the database. If error (Except) add to the database.
@@ -93,10 +45,38 @@ def addTown(session, town_input):
     session.add(town)
     session.commit()
 
+def addJourney():
+    session = dbconnect()
+
+    def getRandomTown(session):
+        query = session.query(Town)
+        rowCount = int(query.count())
+        return query.offset(int(rowCount*random.random())).first()
+    
+    def calculateDistance(town_pair):
+        return geopy.distance.distance(
+            (town_pair[0].latitude, town_pair[0].longitude),
+            (town_pair[1].latitude, town_pair[1].longitude)).km
+
+    # Try and get the Country from the database. If error (Except) add to the database.
+    journey = Journey()
+    journey.from_town = getRandomTown(session)
+    journey.to_town = getRandomTown(session)
+    journey.distance = calculateDistance([journey.from_town, journey.to_town])
+    journey.number_of_passenges = 4
+    journey.weight = 40
+    journey.price = journey.distance * 1.1
+    session.add(journey)
+    session.commit()
 
 session = dbconnect()
-
+"""
 with open(r"uk-towns-sample.csv") as csvfile:
     reader = csv.DictReader(csvfile)
     for town in reader:
         addTown(session, town)
+"""
+for i in range(100000):
+    addJourney()
+
+
