@@ -24,22 +24,38 @@ town_query = """
     SELECT 	  
     town.id,
     town.name,
-    town.grid_reference,
-    town.easting,
-    town.northing,
-    town.latitude,
-    town.longitude,
-    town.elevation,
-    town.postcode_sector,
-    town.local_government_area,
     town.nuts_region,
-    town.town_type
+    town.county_id
     FROM town
 """
 
+county_query = """
+    SELECT 	  
+    county.id,
+    county.name AS county_name,
+    county.nation_id 
+    FROM county
+"""
+
+nation_query = """
+    SELECT 	  
+    nation.id,
+    nation.name AS nation_name
+    FROM nation
+"""
 
 
-df = pd.read_sql_query(query, database_connection)
-print(df)
+town = pd.read_sql_query(town_query, database_connection).set_index("id")
+county = pd.read_sql_query(county_query, database_connection).set_index("id")
+nation = pd.read_sql_query(nation_query, database_connection).set_index("id")
 
+output = town.merge(
+  county,
+  left_on='county_id',
+  right_index=True,
+  suffixes=('_town', '_county')
+)
 
+print(output)
+
+output.to_csv("output.csv")

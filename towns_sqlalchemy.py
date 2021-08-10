@@ -45,13 +45,11 @@ def addTown(session, town_input):
     session.add(town)
     session.commit()
 
-def addJourney():
-    session = dbconnect()
+def addJourney(session, towns):
 
-    def getRandomTown(session):
-        query = session.query(Town)
-        rowCount = int(query.count())
-        return query.offset(int(rowCount*random.random())).first()
+    def getRandomTown(session, towns):
+        row = int(len(towns)*random.random())
+        return towns[row]
     
     def calculateDistance(town_pair):
         return geopy.distance.distance(
@@ -60,14 +58,14 @@ def addJourney():
 
     # Try and get the Country from the database. If error (Except) add to the database.
     journey = Journey()
-    journey.from_town = getRandomTown(session)
-    journey.to_town = getRandomTown(session)
+    journey.from_town = getRandomTown(session, towns)
+    journey.to_town = getRandomTown(session, towns)
     journey.distance = calculateDistance([journey.from_town, journey.to_town])
     journey.number_of_passenges = 4
     journey.weight = 40
     journey.price = journey.distance * 1.1
     session.add(journey)
-    session.commit()
+    
 
 session = dbconnect()
 """
@@ -75,8 +73,13 @@ with open(r"uk-towns-sample.csv") as csvfile:
     reader = csv.DictReader(csvfile)
     for town in reader:
         addTown(session, town)
+
 """
+towns = session.query(Town).all()
 for i in range(100000):
-    addJourney()
+    if i % 100 == 0:
+        print('.', end='')
+    addJourney(session, towns)
+session.commit()
 
 

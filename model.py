@@ -73,7 +73,7 @@ class Journey(Base):
 
 # A bunch of stuff to make the connection to the database work.
 def dbconnect():
-    engine = create_engine("mysql+pymysql://root:root@localhost/towns?charset=utf8mb4")
+    engine = create_engine("mysql+pymysql://admin:pfm5mY2HjEdRYFNz@database-2.cilkxsowjw2p.af-south-1.rds.amazonaws.com/towns?charset=utf8mb4")
     Base.metadata.create_all(engine)
     Session = sessionmaker(bind=engine)
     return Session()
