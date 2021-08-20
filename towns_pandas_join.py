@@ -57,5 +57,4 @@ output = town.merge(
 )
 
 print(output)
-
 output.to_csv("output.csv")
